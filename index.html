@@ -1,87 +1,607 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>My GitHub Page</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Approval Matrix — Compliance Timelines</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-            background-color: #f5f5f5;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            margin: auto;
-            width: 300px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        button {
-            padding: 10px 20px;
-            margin-top: 10px;
-            border: none;
-            background-color: #0078d4;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #005fa3;
-        }
-
-        input {
-            padding: 8px;
-            width: 90%;
-            margin-top: 10px;
-        }
-    </style>
+  <!-- Tailwind CDN (static-friendly) -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body>
+<body class="bg-slate-950">
+  <div id="app"></div>
 
-    <div class="card">
-        <h1>Hello 👋</h1>
-        <p id="message">Welcome to your GitHub Page</p>
+  <script>
+    // -----------------------------
+    // DATA (ported from your React)
+    // -----------------------------
+    const SCENARIO_DATA = [
+      {
+        id: "internal-approved",
+        title: "Internal Use Case (with Approved AI Tooling)",
+        category: "Internal",
+        description: "Deploying standard, pre-approved AI applications inside corporate boundaries to improve general operations.",
+        timelines: {
+          green: { duration: "1 week", label: "Low-risk pre-vetted use case" },
+          amber: { duration: "2 weeks", label: "Minor integration or scope extension" },
+          red: { duration: "Up to 6 weeks", label: "Complex configuration or sensitive data storage" }
+        },
+        keyChecklist: {
+          green: ["Submit standard pre-screening form", "Verify tool is on corporate registry", "Confirm data is classified as Non-Confidential"],
+          amber: ["Complete basic technical integration check", "Review third-party API exposure limits", "Document data handling workflow"],
+          red: ["Conduct detailed Data Privacy Impact Assessment (DPIA)", "Obtain security architecture sign-off", "Schedule executive review"]
+        }
+      },
+      {
+        id: "internal-new",
+        title: "Internal Use Case + New AI Tooling",
+        category: "Internal",
+        description: "Introducing entirely new AI technologies, custom platforms, or unvetted vendors for internal operations.",
+        timelines: {
+          green: { duration: "N/A", label: "Not applicable (Requires baseline reviews)" },
+          amber: { duration: "4 weeks", label: "Standard vendor compliance & security evaluation" },
+          red: { duration: "Up to 8 weeks", label: "Intense legal review & proprietary risk assessment" }
+        },
+        keyChecklist: {
+          green: ["N/A - Direct path is blocked. All new tools must initiate at least under an Amber evaluation flow."],
+          amber: ["Initiate vendor security questionnaire", "Perform software licensing risk assessment", "Verify API data storage rules"],
+          red: ["Conduct formal procurement legal review", "Establish custom indemnification agreements", "Perform rigorous threat modeling"]
+        }
+      },
+      {
+        id: "external-approved",
+        title: "External AI benefit / Product Innovation (Approved AI Tooling)",
+        category: "External / Product",
+        description: "Embedding corporate-approved AI models or software directly into customer-facing products, features, or user interfaces.",
+        timelines: {
+          green: { duration: "1 week", label: "Standard minor feature adjustment" },
+          amber: { duration: "4 weeks", label: "Interactive component or medium-impact output" },
+          red: { duration: "Up to 8 weeks", label: "High-volume consumer deployment or autonomous agent launch" }
+        },
+        keyChecklist: {
+          green: ["Ensure UI explicitly states AI assistant engagement", "Check compliance with standard terms of service", "Basic model guardrails active"],
+          amber: ["Review customer-facing liability disclaimers", "Conduct output bias testing & audit log setup", "Establish manual fallback options"],
+          red: ["Conduct extensive adversarial red-teaming", "Draft formal algorithmic transparency policies", "Secure product board approval"]
+        }
+      },
+      {
+        id: "external-byo-hyo",
+        title: "External AI benefit / Product Innovation + BYO/HYO AI",
+        category: "External / Product",
+        description: "Allowing users or enterprise clients to Bring Your Own (BYO) or Host Your Own (HYO) custom model pipelines into our platforms.",
+        timelines: {
+          green: { duration: "N/A", label: "Not applicable (External integrations require complex security baselines)" },
+          amber: { duration: "4 weeks", label: "Standardized API integration framework compliance" },
+          red: { duration: "Up to 8 weeks", label: "Deep system-level exposure or custom hosting SLAs" }
+        },
+        keyChecklist: {
+          green: ["N/A - All custom external pipelines represent heightened infrastructure risk and bypass Green-light fast-tracks."],
+          amber: ["Validate API connectivity and encryption protocols", "Draft standard liability waivers for user models", "Implement API rate limit ceilings"],
+          red: ["Set up sandboxed execution environments for user code", "Draft customized enterprise legal agreements", "Complete multi-tenant separation audit"]
+        }
+      },
+      {
+        id: "internal-variation",
+        title: "Existing Internal AI: Variation to Approved Use case / Tool",
+        category: "Internal",
+        description: "Modifying or adapting a previously scrutinized and approved internal AI tool for a slightly modified team or objective.",
+        timelines: {
+          green: { duration: "1 week", label: "Simple variation with no new data sources" },
+          amber: { duration: "2 weeks", label: "New team access or minor data field variations" },
+          red: { duration: "Up to 4 weeks", label: "Substantial modification in automated decision-making logic" }
+        },
+        keyChecklist: {
+          green: ["Log variation in internal AI ledger", "Confirm no PII data fields are added", "Notify original review sponsors"],
+          amber: ["Update standard operational procedure logs", "Validate that data classification hasn't changed", "Conduct minor access control audit"],
+          red: ["Complete delta-risk assessment on the change", "Obtain partial legal re-clearance", "Test model output consistency with new fields"]
+        }
+      },
+      {
+        id: "external-customer-request",
+        title: "External Customer AI Request (Including Variations)",
+        category: "External / Product",
+        description: "Responding to bespoke, client-initiated requests to build, modify, or embed special AI components directly into their enterprise agreements.",
+        timelines: {
+          green: { duration: "1 week", label: "Simple client request utilizing pre-cleared configurations" },
+          amber: { duration: "2 weeks", label: "Minor customization to model prompt frameworks or standard UX" },
+          red: { duration: "Up to 8 weeks", label: "Highly custom model development, custom datasets, or strict SLA guarantees" }
+        },
+        keyChecklist: {
+          green: ["Confirm client usage conforms to default corporate T&Cs", "Update client deployment tracker", "Validate regional licensing"],
+          amber: ["Execute standard addendum for minor custom features", "Review custom data retention requirements", "Align with account executive team"],
+          red: ["Draft bespoke intellectual property agreements", "Conduct comprehensive custom pipeline security audit", "Establish dedicated customer SLA performance matrix"]
+        }
+      }
+    ];
 
-        <!-- Counter -->
-        <p>Clicks: <span id="counter">0</span></p>
-        <button onclick="incrementCounter()">Click Me</button>
+    // -----------------------------
+    // STATE (React-ish, but vanilla)
+    // -----------------------------
+    const state = {
+      searchQuery: "",
+      activeTab: "matrix",     // "matrix" | "estimator"
+      estimScenarioId: SCENARIO_DATA[0].id,
+      estimRiskLevel: "amber", // "green" | "amber" | "red"
+      isDarkMode: true
+    };
 
-        <!-- Input -->
-        <input type="text" id="nameInput" placeholder="Enter your name">
-        <button onclick="updateMessage()">Update Message</button>
-    </div>
+    // -----------------------------
+    // HELPERS
+    // -----------------------------
+    function getEstimScenario() {
+      return SCENARIO_DATA.find(s => s.id === state.estimScenarioId) || SCENARIO_DATA[0];
+    }
 
-    <script>
-        let count = 0;
+    function filteredScenarios() {
+      const q = state.searchQuery.trim().toLowerCase();
+      if (!q) return SCENARIO_DATA;
+      return SCENARIO_DATA.filter(s =>
+        s.title.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q)
+      );
+    }
 
-        function incrementCounter() {
-            count++;
-            document.getElementById("counter").innerText = count;
+    function esc(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function badgeClass(category) {
+      const isInternal = category.includes("Internal");
+      return isInternal
+        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+        : "bg-purple-500/10 text-purple-400 border border-purple-500/20";
+    }
+
+    function pageShell(inner) {
+      const rootBg = state.isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900";
+      return `
+        <div class="min-h-screen transition-colors duration-300 ${rootBg}">
+          ${header()}
+          <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            ${inner}
+          </main>
+          ${footer()}
+        </div>
+      `;
+    }
+
+    function header() {
+      const border = state.isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-white";
+      const subtitle = state.isDarkMode ? "text-slate-400" : "text-slate-500";
+      const toggleBtn = state.isDarkMode
+        ? "border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
+        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100";
+      const tabsWrap = state.isDarkMode
+        ? "bg-slate-900 border border-slate-800"
+        : "bg-slate-100 border border-slate-200";
+      const tabActive = (tab) => {
+        const isActive = state.activeTab === tab;
+        if (!isActive) return state.isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900";
+        return state.isDarkMode ? "bg-indigo-600 text-white shadow-md" : "bg-white text-indigo-700 shadow";
+      };
+
+      return `
+        <header class="border-b ${border} sticky top-0 z-50 backdrop-blur-md">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+              <div class="flex space-x-1.5 p-2 bg-slate-950 rounded-xl border border-slate-800 shadow-inner">
+                <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+                <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+                <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+              </div>
+              <div>
+                <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                  AI Approval Matrix
+                  <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    Compliance Timelines
+                  </span>
+                </h1>
+                <p class="text-xs ${subtitle}">Assess approval & risk assessment timelines across different AI tooling types</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button
+                id="toggleTheme"
+                class="p-2 rounded-lg border ${toggleBtn} transition-all"
+                aria-label="Toggle light/dark mode"
+                type="button"
+              >
+                ${state.isDarkMode ? sunIcon() : moonIcon()}
+              </button>
+
+              <div class="p-1 rounded-xl flex ${tabsWrap}">
+                <button id="tabMatrix" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${tabActive("matrix")}" type="button">
+                  Full Matrix
+                </button>
+                <button id="tabEstimator" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${tabActive("estimator")}" type="button">
+                  Time Estimator
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+      `;
+    }
+
+    function sunIcon() {
+      return `
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M12 6a6 6 0 100 12 6 6 0 000-12z" />
+        </svg>
+      `;
+    }
+
+    function moonIcon() {
+      return `
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      `;
+    }
+
+    function footer() {
+      const foot = state.isDarkMode ? "border-slate-900 bg-slate-950/60 text-slate-500" : "border-slate-200 bg-white text-slate-400";
+      return `
+        <footer class="border-t py-8 text-center text-xs mt-12 ${foot}">
+          <p>© 2026 AI Governance Office. Authorized personnel only.</p>
+          <p class="mt-1">Timelines are subject to variation depending on final model audit results, security risk classifications, and data boundaries.</p>
+        </footer>
+      `;
+    }
+
+    // -----------------------------
+    // VIEWS
+    // -----------------------------
+    function viewMatrix() {
+      const card = state.isDarkMode ? "bg-slate-900/60 border-slate-800/80" : "bg-white border-slate-200";
+      const textSub = state.isDarkMode ? "text-slate-400" : "text-slate-500";
+      const searchBg = state.isDarkMode ? "bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500" : "bg-slate-100 border-slate-300 text-slate-900 placeholder-slate-400";
+      const tableWrap = state.isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-white";
+      const tableHead = state.isDarkMode ? "bg-slate-900/80 border-slate-800 text-slate-400" : "bg-slate-50 border-slate-200 text-slate-500";
+      const rows = filteredScenarios();
+
+      const rowHtml = rows.length === 0
+        ? `<div class="p-8 text-center text-slate-500">No AI scenarios matched your query. Try a different search term.</div>`
+        : rows.map(s => {
+            const hover = state.isDarkMode ? "hover:bg-slate-800/20" : "hover:bg-slate-50/50";
+
+            const greenBox = s.timelines.green.duration === "N/A"
+              ? (state.isDarkMode ? "bg-slate-950 text-slate-600 border border-slate-850" : "bg-slate-100 text-slate-400")
+              : (state.isDarkMode ? "bg-emerald-950/40 text-emerald-400 border border-emerald-900/50" : "bg-emerald-50 text-emerald-700 border border-emerald-100");
+
+            const amberBox = state.isDarkMode
+              ? "bg-amber-950/40 text-amber-400 border border-amber-900/50"
+              : "bg-amber-50 text-amber-700 border border-amber-100";
+
+            const redBox = state.isDarkMode
+              ? "bg-rose-950/40 text-rose-400 border border-rose-900/50"
+              : "bg-rose-50 text-rose-700 border border-rose-100";
+
+            return `
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-5 items-center transition-all ${hover}">
+                <div class="col-span-1 md:col-span-6 space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md ${badgeClass(s.category)}">
+                      ${esc(s.category)}
+                    </span>
+                  </div>
+                  <h3 class="font-semibold text-sm leading-snug">${esc(s.title)}</h3>
+                  <p class="text-xs ${textSub}">${esc(s.description)}</p>
+                </div>
+
+                <div class="col-span-1 md:col-span-2 flex md:flex-col justify-between md:justify-center items-center gap-1">
+                  <span class="md:hidden text-xs font-semibold text-emerald-500">Green Light:</span>
+                  <div class="px-3 py-1.5 rounded-xl text-xs font-bold text-center w-full max-w-[120px] ${greenBox}">
+                    ${esc(s.timelines.green.duration)}
+                  </div>
+                </div>
+
+                <div class="col-span-1 md:col-span-2 flex md:flex-col justify-between md:justify-center items-center gap-1">
+                  <span class="md:hidden text-xs font-semibold text-amber-500">Amber Light:</span>
+                  <div class="px-3 py-1.5 rounded-xl text-xs font-bold text-center w-full max-w-[120px] ${amberBox}">
+                    ${esc(s.timelines.amber.duration)}
+                  </div>
+                </div>
+
+                <div class="col-span-1 md:col-span-2 flex md:flex-col justify-between md:justify-center items-center gap-1">
+                  <span class="md:hidden text-xs font-semibold text-rose-500">Red Light:</span>
+                  <div class="px-3 py-1.5 rounded-xl text-xs font-bold text-center w-full max-w-[120px] ${redBox}">
+                    ${esc(s.timelines.red.duration)}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+      return `
+        <div class="space-y-6">
+          <div class="p-6 rounded-2xl border ${card} shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="space-y-1">
+              <h2 class="text-lg font-bold">Governance Classifications</h2>
+              <p class="text-sm ${textSub}">
+                Overview of corporate approval and compliance review timelines grouped by AI implementation type.
+              </p>
+            </div>
+
+            <div class="relative w-full md:w-80">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+              <input
+                id="searchInput"
+                type="text"
+                placeholder="Filter use cases..."
+                value="${esc(state.searchQuery)}"
+                class="pl-10 pr-4 py-2 w-full rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${searchBg}"
+              />
+            </div>
+          </div>
+
+          <div class="rounded-2xl border overflow-hidden ${tableWrap} shadow-md">
+            <div class="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b text-xs font-bold uppercase tracking-wider ${tableHead}">
+              <div class="col-span-6">AI Use Case / Tool Scenario</div>
+              <div class="col-span-2 text-center text-emerald-500">Green Light</div>
+              <div class="col-span-2 text-center text-amber-500">Amber Light</div>
+              <div class="col-span-2 text-center text-rose-500">Red Light</div>
+            </div>
+
+            <div class="divide-y divide-slate-200 dark:divide-slate-800">
+              ${rowHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function viewEstimator() {
+      const estimScenario = getEstimScenario();
+      const formCard = state.isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-white";
+      const selectBg = state.isDarkMode ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-100 border-slate-300 text-slate-900";
+      const subText = state.isDarkMode ? "text-slate-400" : "text-slate-500";
+
+      const greenDisabled = estimScenario.timelines.green.duration === "N/A";
+      const activeDuration = estimScenario.timelines[state.estimRiskLevel]?.duration || "";
+      const activeLabel = estimScenario.timelines[state.estimRiskLevel]?.label || "";
+      const activeChecklist = (estimScenario.keyChecklist && estimScenario.keyChecklist[state.estimRiskLevel]) ? estimScenario.keyChecklist[state.estimRiskLevel] : [];
+
+      const selectedColor =
+        state.estimRiskLevel === "green" ? "text-emerald-400" :
+        state.estimRiskLevel === "amber" ? "text-amber-400" :
+        "text-rose-400";
+
+      function riskBtn(level) {
+        const isActive = state.estimRiskLevel === level;
+        const base = "p-4 rounded-xl text-left border flex items-center justify-between transition-all";
+        const inactive = state.isDarkMode ? "bg-slate-950/40 border-slate-800 hover:bg-slate-850" : "bg-slate-50 border-slate-200 hover:bg-slate-100";
+
+        if (level === "green" && greenDisabled) {
+          return `
+            <button id="riskGreen" type="button" disabled
+              class="${base} opacity-40 cursor-not-allowed ${inactive}">
+              <div class="flex items-center gap-3">
+                <span class="w-3.5 h-3.5 rounded-full bg-slate-700"></span>
+                <div>
+                  <p class="text-sm font-bold">Green Light</p>
+                  <p class="text-xs ${subText}">Not available for this scenario.</p>
+                </div>
+              </div>
+              <span class="text-xs font-black px-2.5 py-1 rounded-md bg-slate-800/80 text-slate-300">
+                ${esc(estimScenario.timelines.green.duration)}
+              </span>
+            </button>
+          `;
         }
 
-        function updateMessage() {
-            const name = document.getElementById("nameInput").value;
+        const activeClass = (() => {
+          if (!isActive) return inactive;
+          if (level === "green") return state.isDarkMode
+            ? "bg-emerald-500/10 border-emerald-500 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+            : "bg-emerald-50 border-emerald-500 text-emerald-800";
+          if (level === "amber") return state.isDarkMode
+            ? "bg-amber-500/10 border-amber-500 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
+            : "bg-amber-50 border-amber-500 text-amber-800";
+          return state.isDarkMode
+            ? "bg-rose-500/10 border-rose-500 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.1)]"
+            : "bg-rose-50 border-rose-500 text-rose-800";
+        })();
 
-            if (name.trim() === "") {
-                alert("Please enter a name");
-                return;
-            }
+        const dot =
+          level === "green" ? "bg-emerald-500" :
+          level === "amber" ? "bg-amber-500" : "bg-rose-500";
 
-            document.getElementById("message").innerText =
-                "Welcome " + name + " 🚀";
-        }
-    </script>
+        const title =
+          level === "green" ? "Green Light" :
+          level === "amber" ? "Amber Light" : "Red Light";
 
+        const desc =
+          level === "green" ? "Standard process, minimal custom logic." :
+          level === "amber" ? "Standard modifications, compliance vetting required." :
+          "High data sensitivity, unapproved models, or external customer scale.";
+
+        return `
+          <button id="risk${level[0].toUpperCase()+level.slice(1)}" type="button"
+            class="${base} ${activeClass}">
+            <div class="flex items-center gap-3">
+              <span class="w-3.5 h-3.5 rounded-full ${dot}"></span>
+              <div>
+                <p class="text-sm font-bold">${title}</p>
+                <p class="text-xs ${subText}">${desc}</p>
+              </div>
+            </div>
+            <span class="text-xs font-black px-2.5 py-1 rounded-md bg-slate-800/80 text-slate-300">
+              ${esc(estimScenario.timelines[level].duration)}
+            </span>
+          </button>
+        `;
+      }
+
+      function trafficLight() {
+        const frame = state.isDarkMode ? "bg-slate-950 border border-slate-800" : "bg-slate-900 border border-slate-950";
+        const redOn   = state.estimRiskLevel === "red"   ? "bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,1)] ring-4 ring-rose-500/30" : "bg-rose-950/40 opacity-20";
+        const amberOn = state.estimRiskLevel === "amber" ? "bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,1)] ring-4 ring-amber-500/30" : "bg-amber-950/40 opacity-20";
+        const greenOn = state.estimRiskLevel === "green" ? "bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,1)] ring-4 ring-emerald-500/30" : "bg-emerald-950/40 opacity-20";
+        return `
+          <div class="w-24 p-5 rounded-3xl flex flex-col gap-5 items-center shadow-2xl ${frame}">
+            <div class="w-10 h-10 rounded-full transition-all duration-300 ${redOn}"></div>
+            <div class="w-10 h-10 rounded-full transition-all duration-300 ${amberOn}"></div>
+            <div class="w-10 h-10 rounded-full transition-all duration-300 ${greenOn}"></div>
+          </div>
+        `;
+      }
+
+      const resultsCard = state.isDarkMode ? "border-slate-800 bg-slate-900/60 shadow-xl" : "border-slate-200 bg-white shadow-lg";
+
+      const checklistHtml = activeChecklist.length
+        ? `<ul class="mt-3 space-y-2 text-sm">
+            ${activeChecklist.map(item => `
+              <li class="flex gap-2">
+                <span class="mt-1.5 w-2 h-2 rounded-full ${state.estimRiskLevel === "green" ? "bg-emerald-500" : state.estimRiskLevel === "amber" ? "bg-amber-500" : "bg-rose-500"}"></span>
+                <span class="${subText}">${esc(item)}</span>
+              </li>
+            `).join("")}
+          </ul>`
+        : `<p class="mt-3 text-sm ${subText}">No checklist available.</p>`;
+
+      return `
+        <div class="max-w-4xl mx-auto space-y-8">
+          <div class="text-center space-y-2">
+            <h2 class="text-2xl font-black tracking-tight">Timeline & Risk Level Estimator</h2>
+            <p class="text-sm max-w-xl mx-auto ${subText}">
+              Pick your implementation category and risk variables below to calculate your anticipated compliance review timeline.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+            <!-- Left: controls -->
+            <div class="md:col-span-7 p-6 rounded-2xl border space-y-6 ${formCard}">
+              <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Step 1: Select AI Use Case Category</label>
+                <select id="scenarioSelect" class="w-full p-3 rounded-xl border text-sm font-semibold focus:ring-2 focus:ring-indigo-500 transition-all focus:outline-none ${selectBg}">
+                  ${SCENARIO_DATA.map(s => `
+                    <option value="${esc(s.id)}" ${s.id === state.estimScenarioId ? "selected" : ""}>
+                      ${esc(s.title)}
+                    </option>
+                  `).join("")}
+                </select>
+                <p class="text-xs ${subText}">${esc(estimScenario.description)}</p>
+              </div>
+
+              <div class="space-y-4">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Step 2: Anticipated Risk Classification</label>
+                <div class="grid grid-cols-1 gap-3">
+                  ${riskBtn("green")}
+                  ${riskBtn("amber")}
+                  ${riskBtn("red")}
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: results -->
+            <div class="md:col-span-5 flex flex-col items-center w-full">
+              <div class="w-full p-8 rounded-2xl border flex flex-col items-center space-y-6 ${resultsCard}">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Active Timeline Signal</h3>
+
+                ${trafficLight()}
+
+                <div class="text-center space-y-1">
+                  <p class="text-xs ${subText}">Estimated Approval Time</p>
+                  <p class="text-3xl font-black ${selectedColor}">${esc(activeDuration)}</p>
+                  <p class="text-[11px] max-w-[260px] mx-auto italic ${subText}">"${esc(activeLabel)}"</p>
+                </div>
+
+                <div class="w-full border-t ${state.isDarkMode ? "border-slate-800" : "border-slate-200"} pt-5">
+                  <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Key Checklist</p>
+                  ${checklistHtml}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // -----------------------------
+    // RENDER + EVENTS
+    // -----------------------------
+    function render() {
+      const inner = (state.activeTab === "matrix") ? viewMatrix() : viewEstimator();
+      document.getElementById("app").innerHTML = pageShell(inner);
+      bindEvents();
+    }
+
+    function bindEvents() {
+      // Header controls
+      const toggleTheme = document.getElementById("toggleTheme");
+      if (toggleTheme) {
+        toggleTheme.onclick = () => {
+          state.isDarkMode = !state.isDarkMode;
+          render();
+        };
+      }
+
+      const tabMatrix = document.getElementById("tabMatrix");
+      if (tabMatrix) {
+        tabMatrix.onclick = () => {
+          state.activeTab = "matrix";
+          render();
+        };
+      }
+
+      const tabEstimator = document.getElementById("tabEstimator");
+      if (tabEstimator) {
+        tabEstimator.onclick = () => {
+          state.activeTab = "estimator";
+          render();
+        };
+      }
+
+      // Matrix search
+      const searchInput = document.getElementById("searchInput");
+      if (searchInput) {
+        searchInput.oninput = (e) => {
+          state.searchQuery = e.target.value || "";
+          render();
+        };
+      }
+
+      // Estimator controls
+      const scenarioSelect = document.getElementById("scenarioSelect");
+      if (scenarioSelect) {
+        scenarioSelect.onchange = (e) => {
+          state.estimScenarioId = e.target.value;
+          const next = getEstimScenario();
+          if (next.timelines.green.duration === "N/A" && state.estimRiskLevel === "green") {
+            state.estimRiskLevel = "amber";
+          }
+          render();
+        };
+      }
+
+      const greenBtn = document.getElementById("riskGreen");
+      if (greenBtn && !greenBtn.disabled) greenBtn.onclick = () => { state.estimRiskLevel = "green"; render(); };
+
+      const amberBtn = document.getElementById("riskAmber");
+      if (amberBtn) amberBtn.onclick = () => { state.estimRiskLevel = "amber"; render(); };
+
+      const redBtn = document.getElementById("riskRed");
+      if (redBtn) redBtn.onclick = () => { state.estimRiskLevel = "red"; render(); };
+    }
+
+    // Initial render
+    render();
+  </script>
 </body>
 </html>
